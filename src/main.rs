@@ -1,4 +1,5 @@
 mod handler;
+mod requests;
 
 use handler::Handler;
 use serenity::prelude::*;
