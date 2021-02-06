@@ -1,3 +1,4 @@
+use core::time::Duration;
 use serenity::{
     async_trait,
     model::{channel::Message, gateway::Ready, guild::Member, prelude::{GuildId,RoleId}},
@@ -29,9 +30,20 @@ impl EventHandler for Handler {
                 })
             })
             .await;
-
-        if let Err(why) = dm {
-            println!("Error when direct messaging user: {:?}", why);
+        match dm {
+            Ok(msg) => {
+                let a = msg
+                    .channel_id
+                    .await_reply(&ctx)
+                    .timeout(Duration::from_secs(3600))
+                    .await;
+                if let Some(ms) = a {
+                    println!("{:#}", ms.content);
+                }
+                //now we send to backend ids
+                //and then we recive
+            }
+            Err(why) => println!("Error when direct messaging user: {:?}", why),
         }
     }
 
