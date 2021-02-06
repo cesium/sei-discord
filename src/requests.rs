@@ -2,19 +2,19 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginRequest {
-    email: String,
-    password: String,
+    pub email: String,
+    pub password: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginReply {
-    jwt: String,
+    pub jwt: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct AssociationRequest {
-    discord_association_code: String,
-    discord_id: String,
+    pub discord_association_code: String,
+    pub discord_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,5 +29,5 @@ pub enum UserType {
 
 #[derive(Serialize, Deserialize)]
 pub struct ErrorReply {
-    error: String,
+    pub error: String,
 }
