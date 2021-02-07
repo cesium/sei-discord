@@ -1,4 +1,6 @@
-mod handler;
+pub mod config;
+pub mod handler;
+pub mod requests;
 
 use handler::Handler;
 use serenity::prelude::*;

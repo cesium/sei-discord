@@ -64,9 +64,48 @@ impl EventHandler for Handler {
                 })
             })
             .await;
+        match dm {
+            Ok(msg) => {
+                let a = msg
+                    .channel_id
+                    .await_reply(&ctx)
+                    .timeout(Duration::from_secs(3600))
+                    .await;
+                if let Some(ms) = a {
+                    println!("{:#}", ms.content);
+                }
+                //now we send to backend ids
+                //and then we recive
+            }
+            Err(why) => println!("Error when direct messaging user: {:?}", why),
+        }
+    }
 
-        if let Err(why) = dm {
-            println!("Error when direct messaging user: {:?}", why);
+    async fn message(&self, ctx: Context, new_message: Message) {
+        let _request = AssociationRequest {
+            discord_association_code: new_message.content.to_owned(),
+            discord_id: new_message.author.id.to_string(),
+        };
+        if Message::is_private(&new_message) {
+            if new_message.content == "give me" {
+                let role_id = ROLES
+                    .get("orador")
+                    .expect("Safira, do your job properly pls");
+                let member = GUILD_ID.member(&ctx, new_message.author.id).await;
+                match member {
+                    Ok(mut m) => {
+                        let _ = m.add_role(&ctx, role_id).await;
+                    }
+                    Err(e) => println!("{}", e),
+                }
+            }
+            new_message
+                .author
+                .dm(&ctx, |m| {
+                    m.content("Não faço ideia se o teu ID é válido ainda")
+                })
+                .await
+                .unwrap();
         }
     }
 
