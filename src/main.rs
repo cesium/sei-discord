@@ -1,6 +1,7 @@
 pub mod config;
 pub mod handler;
 pub mod requests;
+pub mod tiers;
 
 use handler::Handler;
 use serenity::prelude::*;

@@ -1,5 +1,8 @@
-use crate::config::CONFIG;
-use crate::requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest};
+use crate::{
+    config::CONFIG,
+    requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest},
+    tiers::TIERS,
+};
 use core::time::Duration;
 use lazy_static::lazy_static;
 use phf::phf_map;
