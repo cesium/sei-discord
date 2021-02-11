@@ -56,7 +56,11 @@ pub struct Tier {
 }
 
 impl Tier {
-    pub async fn give_tier(&self, ctx: Context, user: UserId) -> serenity::Result<()> {
+    pub async fn create(_name: &str) -> serenity::Result<Self> {
+        todo!()
+    }
+
+    pub async fn give(&self, ctx: Context, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
                 member.add_role(&ctx, self.role_id).await?;
@@ -65,10 +69,43 @@ impl Tier {
             Err(a) => Err(a),
         }
     }
+
+    pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
+        self.guild_id.delete_role(&ctx, self.role_id).await?;
+        for company in self.companies.values() {
+            company.delete(&ctx).await?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Company {
+    guild_id: GuildId,
     role_id: RoleId,
     channels: Vec<ChannelId>,
+}
+
+impl Company {
+    pub async fn create(_name: &str) -> serenity::Result<Self> {
+        todo!()
+    }
+
+    pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
+        self.guild_id.delete_role(&ctx, self.role_id).await?;
+        for channel in &self.channels {
+            channel.delete(&ctx).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn give(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+        match self.guild_id.member(&ctx, user).await {
+            Ok(mut member) => {
+                member.add_role(&ctx, self.role_id).await?;
+                Ok(())
+            }
+            Err(a) => Err(a),
+        }
+    }
 }
