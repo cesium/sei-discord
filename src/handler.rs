@@ -1,7 +1,6 @@
 use crate::{
     config::CONFIG,
     requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest},
-    tiers::TIERS,
 };
 use core::time::Duration;
 use lazy_static::lazy_static;
