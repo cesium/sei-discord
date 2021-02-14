@@ -58,6 +58,21 @@ impl Tiers {
     pub fn tier(&self, name: &str) -> Option<&Tier> {
         self.tiers.get(name)
     }
+
+    pub fn put(&mut self, name: String, tier: Tier) {
+        self.tiers.insert(name, tier);
+        self.save();
+    }
+
+    pub fn rm(&mut self, to_rm: &str) -> Option<String> {
+        let rm = self.tiers.remove(to_rm);
+        self.save();
+        if let Some(_) = rm {
+            Some(to_rm.to_owned())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
