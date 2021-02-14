@@ -1,4 +1,6 @@
+pub mod company;
 use crate::config::CONFIG;
+use company::Company;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serenity::{
@@ -27,11 +29,17 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Tiers(HashMap<String, Tier>);
+pub struct Tiers {
+    tiers: HashMap<String, Tier>,
+    spotlight: ChannelId,
+}
 
 impl Default for Tiers {
     fn default() -> Self {
-        Self(HashMap::new())
+        Self {
+            tiers: HashMap::new(),
+            spotlight: ChannelId::default(),
+        }
     }
 }
 
@@ -46,6 +54,10 @@ impl Tiers {
         serde_json::to_writer(writer, &self)?;
         Ok(())
     }
+
+    pub fn tier(&self, name: &str) -> Option<&Tier> {
+        self.tiers.get(name)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -56,11 +68,21 @@ pub struct Tier {
 }
 
 impl Tier {
-    pub async fn create(_name: &str) -> serenity::Result<Self> {
-        todo!()
+    pub async fn create(name: &str, ctx: &Context, gid: GuildId) -> serenity::Result<Self> {
+        let upper_name = name.to_uppercase();
+        let role = gid
+            .create_role(&ctx.http, |z| {
+                z.hoist(false).mentionable(true).name(&upper_name)
+            })
+            .await?;
+        Ok(Tier {
+            guild_id: gid,
+            role_id: role.id,
+            companies: HashMap::new(),
+        })
     }
 
-    pub async fn give(&self, ctx: Context, user: UserId) -> serenity::Result<()> {
+    pub async fn give(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
                 member.add_role(&ctx, self.role_id).await?;
@@ -77,35 +99,8 @@ impl Tier {
         }
         Ok(())
     }
-}
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Company {
-    guild_id: GuildId,
-    role_id: RoleId,
-    channels: Vec<ChannelId>,
-}
-
-impl Company {
-    pub async fn create(_name: &str) -> serenity::Result<Self> {
-        todo!()
-    }
-
-    pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
-        self.guild_id.delete_role(&ctx, self.role_id).await?;
-        for channel in &self.channels {
-            channel.delete(&ctx).await?;
-        }
-        Ok(())
-    }
-
-    pub async fn give(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
-        match self.guild_id.member(&ctx, user).await {
-            Ok(mut member) => {
-                member.add_role(&ctx, self.role_id).await?;
-                Ok(())
-            }
-            Err(a) => Err(a),
-        }
+    pub fn company(&self, name: &str) -> Option<&Company> {
+        self.companies.get(name)
     }
 }
