@@ -4,7 +4,7 @@ pub mod handler;
 pub mod requests;
 pub mod tiers;
 
-use crate::commands::tier::TIER_GROUP;
+use crate::commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP};
 use handler::Handler;
 use serenity::{framework::StandardFramework, prelude::*};
 use std::env;
@@ -17,7 +17,9 @@ async fn main() {
         .framework(
             StandardFramework::new()
                 .configure(|c| c.prefix("$"))
-                .group(&TIER_GROUP),
+                .group(&TIER_GROUP)
+                .group(&COMPANY_GROUP)
+                .group(&COMMANDS_GROUP),
         )
         .await
         .expect("Err creating client");

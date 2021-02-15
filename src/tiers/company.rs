@@ -38,8 +38,8 @@ impl Company {
             .await?;
         let voice = gid
             .create_channel(&ctx, |c| {
-                c.name(format!("{}-text", &upper_name))
-                    .kind(ChannelType::Text)
+                c.name(format!("{}-voice", &upper_name))
+                    .kind(ChannelType::Voice)
                     .category(category.id)
             })
             .await?;

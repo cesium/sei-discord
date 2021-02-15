@@ -46,7 +46,7 @@ impl Default for Tiers {
 }
 
 impl Tiers {
-    fn save(&self) -> std::io::Result<()> {
+    pub fn save(&self) -> std::io::Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .truncate(true)
@@ -109,6 +109,16 @@ impl Tier {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
                 member.add_role(&ctx, self.role_id).await?;
+                Ok(())
+            }
+            Err(a) => Err(a),
+        }
+    }
+
+    pub async fn rmuser(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+        match self.guild_id.member(&ctx, user).await {
+            Ok(mut member) => {
+                member.remove_role(&ctx, self.role_id).await?;
                 Ok(())
             }
             Err(a) => Err(a),

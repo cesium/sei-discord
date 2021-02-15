@@ -1,4 +1,4 @@
-use crate::tiers::{company::Company, TIERS};
+use crate::tiers::{company::Company as Corp, TIERS};
 use serenity::{
     framework::standard::{
         macros::{command, group},
@@ -15,7 +15,7 @@ use serenity::{
 #[commands(create, rm, addch, rmch, spotlight, adduser, rmuser)]
 #[required_permissions(ADMINISTRATOR)]
 #[prefixes("company")]
-struct Tier;
+struct Company;
 
 #[command]
 #[min_args(2)]
@@ -25,17 +25,15 @@ pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut vec = Vec::new();
     if let Some(tier) = TIERS.lock().await.tier(tier_str) {
         for arg in args {
-            if let Ok(company) = Company::create(arg, &ctx, msg.guild_id.unwrap()).await {
-                tier.put(arg.to_owned(), company);
+            if let Ok(company) = Corp::create(arg, &ctx, msg.guild_id.unwrap()).await {
+                tier.put(arg.to_uppercase(), company);
                 vec.push(arg);
             }
         }
     }
-    msg.reply(
-        &ctx,
-        format!("Foram criadas as empresas: {}", vec.join(" ")),
-    )
-    .await?;
+    TIERS.lock().await.save()?;
+    msg.reply(&ctx, format!("Created companies: {}", vec.join(" ")))
+        .await?;
     Ok(())
 }
 
@@ -47,24 +45,22 @@ pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut vec = Vec::new();
     if let Some(tier) = TIERS.lock().await.tier(tier) {
         for arg in args {
-            if let Some(company) = tier.rm(arg) {
+            if let Some(company) = tier.rm(&arg.to_uppercase()) {
                 company.delete(&ctx).await?;
                 vec.push(arg);
             }
         }
     }
-    msg.reply(
-        &ctx,
-        format!("Foram criadas as empresas: {}", vec.join(" ")),
-    )
-    .await?;
+    TIERS.lock().await.save()?;
+    msg.reply(&ctx, format!("Removed companies: {}", vec.join(" ")))
+        .await?;
     Ok(())
 }
 
 #[command]
 #[min_args(2)]
 pub async fn addch(_ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
-    let company = args.single::<String>().unwrap();
+    let company = args.single::<String>().unwrap().to_uppercase();
     if let Some(company) = TIERS
         .lock()
         .await
@@ -76,13 +72,14 @@ pub async fn addch(_ctx: &Context, _msg: &Message, mut args: Args) -> CommandRes
             company.addch(args.single::<ChannelId>()?);
         }
     };
+    TIERS.lock().await.save()?;
     Ok(())
 }
 
 #[command]
 #[min_args(2)]
 pub async fn rmch(_ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
-    let company = args.single::<String>().unwrap();
+    let company = args.single::<String>().unwrap().to_uppercase();
     if let Some(company) = TIERS
         .lock()
         .await
@@ -94,30 +91,24 @@ pub async fn rmch(_ctx: &Context, _msg: &Message, mut args: Args) -> CommandResu
             company.rmch(args.single::<ChannelId>()?);
         }
     };
+    TIERS.lock().await.save()?;
     Ok(())
 }
 
 #[command]
 #[min_args(2)]
 pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let company_name = args.single::<String>().unwrap();
+    let company_name = args.single::<String>().unwrap().to_uppercase();
     let status = args.single::<bool>().unwrap();
-    if let Some(company) = TIERS
-        .lock()
-        .await
+    let mut locked_tier = TIERS.lock().await;
+    let spot = *locked_tier.spotlight.get(&msg.guild_id.unwrap()).unwrap();
+    if let Some(company) = locked_tier
         .flat_iter()
         .find(|(k, _v)| **k == company_name)
         .map(|(_k, v)| v)
     {
         if status {
-            if company
-                .spotlight_start(
-                    &ctx,
-                    *TIERS.lock().await.spotlight.get(&company.guild_id).unwrap(),
-                )
-                .await
-                .is_ok()
-            {
+            if company.spotlight_start(&ctx, spot).await.is_ok() {
                 msg.reply(&ctx, format!("Spotlight enabled for {}", company_name))
                     .await?;
             } else {
@@ -137,14 +128,18 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             )
             .await?;
         }
+    } else {
+        msg.reply(&ctx, format!("Company {} doesnt exist", company_name))
+            .await?;
     }
+    locked_tier.save()?;
     Ok(())
 }
 
 #[command]
 #[min_args(2)]
 pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let company_name = args.single::<String>().unwrap();
+    let company_name = args.single::<String>().unwrap().to_uppercase();
     if let Some(company) = TIERS
         .lock()
         .await
@@ -166,7 +161,7 @@ pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 #[command]
 #[min_args(2)]
 pub async fn rmuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let company_name = args.single::<String>().unwrap();
+    let company_name = args.single::<String>().unwrap().to_uppercase();
     if let Some(company) = TIERS
         .lock()
         .await

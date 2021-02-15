@@ -24,6 +24,7 @@ pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> Comm
         .await
         .spotlight
         .insert(msg.guild_id.unwrap(), spotlight_cat);
+    TIERS.lock().await.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", spotlight_cat))
         .await?;
     Ok(())
@@ -38,16 +39,16 @@ pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         .await
         .spotlight
         .insert(msg.guild_id.unwrap(), news_channel);
+    TIERS.lock().await.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", news_channel))
         .await?;
     Ok(())
 }
 
 #[command]
-#[min_args(1)]
-pub async fn broadcast(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
+pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     for channel in msg.guild_id.unwrap().channels(&ctx).await?.values() {
-        channel.say(&ctx, msg.content.clone()).await?;
+        channel.say(&ctx, args.rest()).await;
     }
     Ok(())
 }
