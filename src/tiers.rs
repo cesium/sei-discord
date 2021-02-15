@@ -31,14 +31,16 @@ lazy_static! {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tiers {
     tiers: HashMap<String, Tier>,
-    spotlight: ChannelId,
+    pub spotlight: HashMap<GuildId, ChannelId>,
+    pub news_channel: HashMap<GuildId, ChannelId>,
 }
 
 impl Default for Tiers {
     fn default() -> Self {
         Self {
             tiers: HashMap::new(),
-            spotlight: ChannelId::default(),
+            spotlight: HashMap::new(),
+            news_channel: HashMap::new(),
         }
     }
 }
@@ -72,6 +74,12 @@ impl Tiers {
         let rm = self.tiers.remove(to_rm);
         self.save();
         rm
+    }
+
+    pub fn flat_iter(&mut self) -> impl Iterator<Item = (&'_ String, &'_ mut Company)> {
+        self.tiers
+            .iter_mut()
+            .flat_map(|(_k, v)| v.companies.iter_mut())
     }
 }
 

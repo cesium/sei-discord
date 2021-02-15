@@ -1,4 +1,4 @@
-use crate::tiers::{Tier as T, Tiers, TIERS};
+use crate::tiers::{Tier as T, TIERS};
 use serenity::{
     framework::standard::{
         macros::{command, group},
@@ -16,7 +16,7 @@ struct Tier;
 
 #[command]
 pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let mut args = args.raw();
+    let args = args.raw();
     let mut vec = Vec::new();
     for arg in args {
         if let Ok(tier) = T::create(arg, &ctx, msg.guild_id.unwrap()).await {
