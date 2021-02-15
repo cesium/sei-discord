@@ -56,6 +56,7 @@ impl Company {
 
     pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
         self.guild_id.delete_role(&ctx, self.role_id).await?;
+        self.cat_id.delete(&ctx).await?;
         for channel in &self.channels {
             channel.delete(&ctx).await?;
         }

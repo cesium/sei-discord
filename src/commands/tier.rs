@@ -9,7 +9,7 @@ use serenity::{
 };
 
 #[group]
-#[commands(create, rm)]
+#[commands(create, rm, adduser, rmuser)]
 #[required_permissions(ADMINISTRATOR)]
 #[prefixes("tier")]
 struct Tier;
@@ -60,6 +60,8 @@ pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
     Ok(())
 }
 
+#[command]
+#[min_args(2)]
 pub async fn rmuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let tier_name = args.single::<String>().unwrap().to_uppercase();
     if let Some(tier) = TIERS.lock().await.tier(&tier_name) {
