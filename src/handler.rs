@@ -56,7 +56,7 @@ pub struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn guild_member_addition(&self, ctx: Context, _guild_id: GuildId, new_member: Member) {
+        async fn guild_member_addition(&self, ctx: Context, _guild_id: GuildId, new_member: Member) {
         let dm = new_member
             .user
             .dm(&ctx, |m| {
@@ -80,6 +80,34 @@ impl EventHandler for Handler {
                 //and then we recive
             }
             Err(why) => println!("Error when direct messaging user: {:?}", why),
+        }
+    }
+
+    async fn message(&self, ctx: Context, new_message: Message) {
+        let _request = AssociationRequest {
+            discord_association_code: new_message.content.to_owned(),
+            discord_id: new_message.author.id.to_string(),
+        };
+        if Message::is_private(&new_message) {
+            if new_message.content == "give me" {
+                let role_id = ROLES
+                    .get("orador")
+                    .expect("Safira, do your job properly pls");
+                let member = GUILD_ID.member(&ctx, new_message.author.id).await;
+                match member {
+                    Ok(mut m) => {
+                        let _ = m.add_role(&ctx, role_id).await;
+                    }
+                    Err(e) => println!("{}", e),
+                }
+            }
+            new_message
+                .author
+                .dm(&ctx, |m| {
+                    m.content("Não faço ideia se o teu ID é válido ainda")
+                })
+                .await
+                .unwrap();
         }
     }
 
