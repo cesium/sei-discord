@@ -11,8 +11,8 @@ use std::collections::HashMap;
 use std::{
     fs::{File, OpenOptions},
     io::{BufReader, BufWriter},
-    sync::Mutex,
 };
+use tokio::sync::Mutex;
 
 lazy_static! {
     pub static ref TIERS: Mutex<Tiers> = {
@@ -55,8 +55,12 @@ impl Tiers {
         Ok(())
     }
 
-    pub fn tier(&self, name: &str) -> Option<&Tier> {
-        self.tiers.get(name)
+    pub fn tier(&mut self, name: &str) -> Option<&mut Tier> {
+        self.tiers.get_mut(name)
+    }
+
+    pub fn exists(&self, name: &str) -> bool {
+        self.tiers.contains_key(name)
     }
 
     pub fn put(&mut self, name: String, tier: Tier) {
@@ -64,14 +68,10 @@ impl Tiers {
         self.save();
     }
 
-    pub fn rm(&mut self, to_rm: &str) -> Option<String> {
+    pub fn rm(&mut self, to_rm: &str) -> Option<Tier> {
         let rm = self.tiers.remove(to_rm);
         self.save();
-        if let Some(_) = rm {
-            Some(to_rm.to_owned())
-        } else {
-            None
-        }
+        rm
     }
 }
 
@@ -117,5 +117,17 @@ impl Tier {
 
     pub fn company(&self, name: &str) -> Option<&Company> {
         self.companies.get(name)
+    }
+
+    pub fn put(&mut self, name: String, company: Company) {
+        self.companies.insert(name, company);
+    }
+
+    pub fn rm(&mut self, to_rm: &str) -> Option<Company> {
+        self.companies.remove(to_rm)
+    }
+
+    pub fn exists(&self, name: &str) -> bool {
+        self.companies.contains_key(name)
     }
 }

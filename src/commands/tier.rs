@@ -9,7 +9,7 @@ use serenity::{
 };
 
 #[group]
-#[commands(create)]
+#[commands(create, rm)]
 #[required_permissions(ADMINISTRATOR)]
 #[prefixes("tier")]
 struct Tier;
@@ -20,7 +20,7 @@ pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut vec = Vec::new();
     for arg in args {
         if let Ok(tier) = T::create(arg, &ctx, msg.guild_id.unwrap()).await {
-            TIERS.lock().unwrap().put(arg.to_owned(), tier);
+            TIERS.lock().await.put(arg.to_owned(), tier);
             vec.push(arg);
         }
     }
@@ -31,10 +31,11 @@ pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 #[command]
 pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let mut args = args.raw();
+    let args = args.raw();
     let mut vec = Vec::new();
     for arg in args {
-        if let Some(s) = TIERS.lock().unwrap().rm(arg) {
+        if let Some(s) = TIERS.lock().await.rm(arg) {
+            s.delete(&ctx).await?;
             vec.push(arg);
         }
     }
