@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serenity = { version = "0.9", default_features = false, features = ["client", "gateway", "rustls_backend", "model", "utils", "collector"] }
-tokio = { version = "0.2", features = ["macros"] }
+serenity = { version = "0.10", default_features = true, features = ["client", "gateway", "rustls_backend", "model", "utils", "collector", "framework"] }
+tokio = { version = "1", features = ["macros", "sync"] }
 phf = { version = "0.8", features = ["macros"] }
 serde = { version = "1.0.121", features = ["derive"] }
 serde_json = "1"
