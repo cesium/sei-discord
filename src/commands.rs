@@ -1,7 +1,7 @@
 pub mod company;
 pub mod tier;
 
-use crate::tiers::TIERS;
+use crate::tiers::{Guild, TIERS};
 use serenity::{
     framework::standard::{
         macros::{command, group},
@@ -22,8 +22,10 @@ pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> Comm
     TIERS
         .lock()
         .await
-        .spotlight
-        .insert(msg.guild_id.unwrap(), spotlight_cat);
+        .0
+        .entry(msg.guild_id.unwrap())
+        .or_insert(Guild::default())
+        .spotlight = Some(spotlight_cat);
     TIERS.lock().await.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", spotlight_cat))
         .await?;
@@ -37,8 +39,10 @@ pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     TIERS
         .lock()
         .await
-        .spotlight
-        .insert(msg.guild_id.unwrap(), news_channel);
+        .0
+        .entry(msg.guild_id.unwrap())
+        .or_insert(Guild::default())
+        .news_channel = Some(news_channel);
     TIERS.lock().await.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", news_channel))
         .await?;

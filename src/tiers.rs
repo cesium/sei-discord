@@ -4,7 +4,7 @@ use company::Company;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serenity::{
-    client::Context,
+    http::CacheHttp,
     model::id::{ChannelId, GuildId, RoleId, UserId},
 };
 use std::collections::HashMap;
@@ -29,18 +29,29 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Tiers {
-    tiers: HashMap<String, Tier>,
-    pub spotlight: HashMap<GuildId, ChannelId>,
-    pub news_channel: HashMap<GuildId, ChannelId>,
-}
+pub struct Tiers(pub HashMap<GuildId, Guild>);
 
 impl Default for Tiers {
     fn default() -> Self {
+        Self(HashMap::new())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Guild {
+    tiers: HashMap<String, Tier>,
+    pub spotlight: Option<ChannelId>,
+    pub news_channel: Option<ChannelId>,
+    pub spotlight_company: Option<String>,
+}
+
+impl Default for Guild {
+    fn default() -> Self {
         Self {
             tiers: HashMap::new(),
-            spotlight: HashMap::new(),
-            news_channel: HashMap::new(),
+            spotlight: Option::None,
+            spotlight_company: Option::None,
+            news_channel: Option::None,
         }
     }
 }
@@ -56,7 +67,9 @@ impl Tiers {
         serde_json::to_writer(writer, &self)?;
         Ok(())
     }
+}
 
+impl Guild {
     pub fn tier(&mut self, name: &str) -> Option<&mut Tier> {
         self.tiers.get_mut(name)
     }
@@ -67,12 +80,10 @@ impl Tiers {
 
     pub fn put(&mut self, name: String, tier: Tier) {
         self.tiers.insert(name, tier);
-        self.save();
     }
 
     pub fn rm(&mut self, to_rm: &str) -> Option<Tier> {
         let rm = self.tiers.remove(to_rm);
-        self.save();
         rm
     }
 
@@ -91,10 +102,10 @@ pub struct Tier {
 }
 
 impl Tier {
-    pub async fn create(name: &str, ctx: &Context, gid: GuildId) -> serenity::Result<Self> {
+    pub async fn create(name: &str, ctx: &impl CacheHttp, gid: GuildId) -> serenity::Result<Self> {
         let upper_name = name.to_uppercase();
         let role = gid
-            .create_role(&ctx.http, |z| {
+            .create_role(&ctx.http(), |z| {
                 z.hoist(false).mentionable(true).name(&upper_name)
             })
             .await?;
@@ -105,28 +116,28 @@ impl Tier {
         })
     }
 
-    pub async fn give(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+    pub async fn give(&self, ctx: &impl CacheHttp, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
-                member.add_role(&ctx, self.role_id).await?;
+                member.add_role(&ctx.http(), self.role_id).await?;
                 Ok(())
             }
             Err(a) => Err(a),
         }
     }
 
-    pub async fn rmuser(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+    pub async fn rmuser(&self, ctx: &impl CacheHttp, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
-                member.remove_role(&ctx, self.role_id).await?;
+                member.remove_role(&ctx.http(), self.role_id).await?;
                 Ok(())
             }
             Err(a) => Err(a),
         }
     }
 
-    pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
-        self.guild_id.delete_role(&ctx, self.role_id).await?;
+    pub async fn delete(&self, ctx: &impl CacheHttp) -> serenity::Result<()> {
+        self.guild_id.delete_role(&ctx.http(), self.role_id).await?;
         for company in self.companies.values() {
             company.delete(&ctx).await?;
         }
