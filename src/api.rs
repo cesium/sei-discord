@@ -1,16 +1,18 @@
 mod types;
 use crate::tiers::TIERS;
 use rocket::State;
+use rocket_contrib::json::Json;
 use serenity::CacheAndHttp;
 use std::sync::Arc;
-use types::ApiKey;
+use types::{ApiKey, SpotlightReq};
 
-#[post("/spotlight", data = "<company_name>")]
+#[post("/spotlight", format = "json", data = "<company_name>")]
 pub async fn spotlight_start(
     _wakey: ApiKey,
-    company_name: String,
+    company_name: Json<SpotlightReq>,
     discord: State<'_, Arc<CacheAndHttp>>,
 ) -> Option<()> {
+    let company_name = &company_name.company;
     let mut locked_tier = TIERS.lock().await;
     for (_guild_id, guild) in locked_tier.0.iter_mut() {
         let company_name = company_name

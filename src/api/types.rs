@@ -18,7 +18,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for ApiKey {
     type Error = ();
 
     async fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let token = request.headers().get_one("token");
+        let token = request.headers().get_one("Authorization");
         if let Some(key) = &CONFIG.wakey {
             match token {
                 Some(token) => {
