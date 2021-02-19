@@ -3,9 +3,11 @@ use crate::tiers::TIERS;
 use rocket::State;
 use serenity::CacheAndHttp;
 use std::sync::Arc;
+use types::ApiKey;
 
 #[post("/spotlight", data = "<company_name>")]
 pub async fn spotlight_start(
+    _wakey: ApiKey,
     company_name: String,
     discord: State<'_, Arc<CacheAndHttp>>,
 ) -> Option<()> {
@@ -36,7 +38,7 @@ pub async fn spotlight_start(
 }
 
 #[delete("/spotlight")]
-pub async fn spotlight_end(discord: State<'_, Arc<CacheAndHttp>>) -> Option<()> {
+pub async fn spotlight_end(_wakey: ApiKey, discord: State<'_, Arc<CacheAndHttp>>) -> Option<()> {
     let mut locked_tier = TIERS.lock().await;
     for (_guild_id, guild) in locked_tier.0.iter_mut() {
         if let Some(company_name) = guild.spotlight_company.clone() {

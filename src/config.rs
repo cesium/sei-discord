@@ -20,6 +20,7 @@ lazy_static! {
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub backend_ip: String,
+    pub wakey: Option<String>,
     pub credentials_location: PathBuf,
     pub roles_location: PathBuf,
 }
