@@ -92,6 +92,9 @@ impl Guild {
             .iter_mut()
             .flat_map(|(_k, v)| v.companies.iter_mut())
     }
+    pub fn iter(&mut self) -> impl Iterator<Item = (&'_ String, &'_ mut Tier)> {
+        self.tiers.iter_mut()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

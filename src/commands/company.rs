@@ -47,19 +47,19 @@ pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 #[command]
 #[min_args(1)]
 pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let mut args = args.raw();
-    let tier = args.next().unwrap();
+    let args = args.raw();
     let mut vec = Vec::new();
     let mut locked_tiers = TIERS.lock().await;
-    if let Some(tier) = locked_tiers
-        .0
-        .entry(msg.guild_id.unwrap())
-        .or_insert_with(Guild::default)
-        .tier(tier)
-    {
-        for arg in args {
-            let arg = arg.to_lowercase().replace("\"", "").replace(" ", "-");
-            if let Some(company) = tier.rm(&arg) {
+    for arg in args {
+        let arg = arg.to_lowercase().replace("\"", "").replace(" ", "-");
+        if let Some(tier) = locked_tiers
+            .0
+            .entry(msg.guild_id.unwrap())
+            .or_insert_with(Guild::default)
+            .iter()
+            .find(|(_k, v)| v.company(&arg).is_some())
+        {
+            if let Some(company) = tier.1.rm(&arg) {
                 company.delete(&ctx.http).await?;
                 vec.push(arg);
             }
