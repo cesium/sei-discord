@@ -18,7 +18,7 @@ pub async fn spotlight_start(
             .map(|(_k, v)| v);
         if let Some(company) = company {
             if let Some(spot) = spot {
-                if company.spotlight_start(&**discord, spot).await.is_ok() {
+                if company.0.spotlight_start(&**discord, spot).await.is_ok() {
                     guild.spotlight_company = Some(company_name.to_owned());
                 } else {
                 }
@@ -41,7 +41,7 @@ pub async fn spotlight_end(discord: State<'_, Arc<CacheAndHttp>>) -> Option<()> 
                 .find(|(k, _v)| **k == company_name)
                 .map(|(_k, v)| v);
             if let Some(company) = company {
-                if company.spotlight_end(&**discord).await.is_ok() {
+                if company.0.spotlight_end(&**discord).await.is_ok() {
                     guild.spotlight_company = None;
                 } else {
                 }
