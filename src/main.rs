@@ -14,7 +14,7 @@ use crate::{
 };
 use handler::Handler;
 use serenity::{framework::StandardFramework, prelude::*};
-use std::env;
+use std::{env, sync::Arc};
 
 #[tokio::main]
 async fn main() {
@@ -31,7 +31,17 @@ async fn main() {
         .await
         .expect("Err creating client");
 
-    rocket::ignite().mount("/", routes![spotlight_start, spotlight_end]);
+    let arc = Arc::clone(&client.cache_and_http);
+    tokio::spawn(async {
+        if let Err(why) = rocket::ignite()
+            .mount("/", routes![spotlight_start, spotlight_end])
+            .manage(arc)
+            .launch()
+            .await
+        {
+            println!("Rocket error: {:?}", why);
+        };
+    });
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
     }

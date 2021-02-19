@@ -103,10 +103,10 @@ pub struct Tier {
 
 impl Tier {
     pub async fn create(name: &str, ctx: &impl CacheHttp, gid: GuildId) -> serenity::Result<Self> {
-        let upper_name = name.to_uppercase();
+        let upper_name = name.to_lowercase().replace("\"", "").replace(" ", "-");
         let role = gid
             .create_role(&ctx.http(), |z| {
-                z.hoist(false).mentionable(true).name(&upper_name)
+                z.hoist(false).mentionable(false).name(&upper_name)
             })
             .await?;
         Ok(Tier {

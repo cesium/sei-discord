@@ -4,13 +4,17 @@ use rocket::State;
 use serenity::CacheAndHttp;
 use std::sync::Arc;
 
-#[post("/spotlight", format = "json", data = "<company_name>")]
+#[post("/spotlight", data = "<company_name>")]
 pub async fn spotlight_start(
     company_name: String,
     discord: State<'_, Arc<CacheAndHttp>>,
 ) -> Option<()> {
     let mut locked_tier = TIERS.lock().await;
     for (_guild_id, guild) in locked_tier.0.iter_mut() {
+        let company_name = company_name
+            .to_lowercase()
+            .replace("\"", "")
+            .replace(" ", "-");
         let spot = guild.spotlight;
         let company = guild
             .flat_iter()
