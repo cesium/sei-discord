@@ -1,10 +1,17 @@
+#![feature(proc_macro_hygiene, decl_macro)]
+pub mod api;
 pub mod commands;
 pub mod config;
 pub mod handler;
 pub mod requests;
 pub mod tiers;
 
-use crate::commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP};
+#[macro_use]
+extern crate rocket;
+use crate::{
+    api::{spotlight_end, spotlight_start},
+    commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP},
+};
 use handler::Handler;
 use serenity::{framework::StandardFramework, prelude::*};
 use std::env;
@@ -24,6 +31,7 @@ async fn main() {
         .await
         .expect("Err creating client");
 
+    rocket::ignite().mount("/", routes![spotlight_start, spotlight_end]);
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
     }

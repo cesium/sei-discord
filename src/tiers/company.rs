@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serenity::{
-    client::Context,
+    http::CacheHttp,
     model::{
         channel::ChannelType,
         id::{ChannelId, GuildId, RoleId, UserId},
@@ -19,25 +19,27 @@ pub struct Company {
 }
 
 impl Company {
-    pub async fn create(name: &str, ctx: &Context, gid: GuildId) -> serenity::Result<Self> {
+    pub async fn create(name: &str, ctx: &impl CacheHttp, gid: GuildId) -> serenity::Result<Self> {
         let upper_name = name.to_uppercase();
         let role = gid
-            .create_role(&ctx.http, |z| {
+            .create_role(&ctx.http(), |z| {
                 z.hoist(false).mentionable(true).name(&upper_name)
             })
             .await?;
         let category = gid
-            .create_channel(&ctx, |c| c.name(&upper_name).kind(ChannelType::Category))
+            .create_channel(&ctx.http(), |c| {
+                c.name(&upper_name).kind(ChannelType::Category)
+            })
             .await?;
         let text = gid
-            .create_channel(&ctx, |c| {
+            .create_channel(&ctx.http(), |c| {
                 c.name(format!("{}-text", &upper_name))
                     .kind(ChannelType::Text)
                     .category(category.id)
             })
             .await?;
         let voice = gid
-            .create_channel(&ctx, |c| {
+            .create_channel(&ctx.http(), |c| {
                 c.name(format!("{}-voice", &upper_name))
                     .kind(ChannelType::Voice)
                     .category(category.id)
@@ -54,29 +56,29 @@ impl Company {
         })
     }
 
-    pub async fn delete(&self, ctx: &Context) -> serenity::Result<()> {
-        self.guild_id.delete_role(&ctx, self.role_id).await?;
-        self.cat_id.delete(&ctx).await?;
+    pub async fn delete(&self, ctx: &impl CacheHttp) -> serenity::Result<()> {
+        self.guild_id.delete_role(&ctx.http(), self.role_id).await?;
+        self.cat_id.delete(&ctx.http()).await?;
         for channel in &self.channels {
-            channel.delete(&ctx).await?;
+            channel.delete(&ctx.http()).await?;
         }
         Ok(())
     }
 
-    pub async fn give(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+    pub async fn give(&self, ctx: &impl CacheHttp, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
-                member.add_role(&ctx, self.role_id).await?;
+                member.add_role(&ctx.http(), self.role_id).await?;
                 Ok(())
             }
             Err(a) => Err(a),
         }
     }
 
-    pub async fn rmuser(&self, ctx: &Context, user: UserId) -> serenity::Result<()> {
+    pub async fn rmuser(&self, ctx: &impl CacheHttp, user: UserId) -> serenity::Result<()> {
         match self.guild_id.member(&ctx, user).await {
             Ok(mut member) => {
-                member.remove_role(&ctx, self.role_id).await?;
+                member.remove_role(&ctx.http(), self.role_id).await?;
                 Ok(())
             }
             Err(a) => Err(a),
@@ -85,19 +87,21 @@ impl Company {
 
     pub async fn spotlight_start(
         &mut self,
-        ctx: &Context,
+        ctx: &impl CacheHttp,
         spotlight: ChannelId,
     ) -> serenity::Result<()> {
         for channel in &self.channels {
-            channel.edit(&ctx, |c| c.category(spotlight)).await?;
+            channel.edit(&ctx.http(), |c| c.category(spotlight)).await?;
         }
         self.spotlight = true;
         Ok(())
     }
 
-    pub async fn spotlight_end(&mut self, ctx: &Context) -> serenity::Result<()> {
+    pub async fn spotlight_end(&mut self, ctx: &impl CacheHttp) -> serenity::Result<()> {
         for channel in &self.channels {
-            channel.edit(&ctx, |c| c.category(self.cat_id)).await?;
+            channel
+                .edit(&ctx.http(), |c| c.category(self.cat_id))
+                .await?;
         }
         self.spotlight = false;
         Ok(())
