@@ -11,6 +11,11 @@ pub struct SpotlightReq {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct CompanyVCResponse {
+    pub users: Vec<serenity::model::id::UserId>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApiKey(Option<String>);
 
 #[rocket::async_trait]

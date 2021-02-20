@@ -1,4 +1,3 @@
-#![feature(proc_macro_hygiene, decl_macro)]
 pub mod api;
 pub mod commands;
 pub mod config;
@@ -8,10 +7,7 @@ pub mod tiers;
 
 #[macro_use]
 extern crate rocket;
-use crate::{
-    api::{spotlight_end, spotlight_start},
-    commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP},
-};
+use crate::commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP};
 use handler::Handler;
 use serenity::{framework::StandardFramework, prelude::*};
 use std::{env, sync::Arc};
@@ -31,17 +27,7 @@ async fn main() {
         .await
         .expect("Err creating client");
 
-    let arc = Arc::clone(&client.cache_and_http);
-    tokio::spawn(async {
-        if let Err(why) = rocket::ignite()
-            .mount("/", routes![spotlight_start, spotlight_end])
-            .manage(arc)
-            .launch()
-            .await
-        {
-            println!("Rocket error: {:?}", why);
-        };
-    });
+    api::main(Arc::clone(&client.cache_and_http));
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
     }
