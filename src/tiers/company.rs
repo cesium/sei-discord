@@ -20,10 +20,11 @@ pub struct Company {
 
 impl Company {
     pub async fn create(name: &str, ctx: &impl CacheHttp, gid: GuildId) -> serenity::Result<Self> {
-        let upper_name = name.to_uppercase();
+        let role_name = name.to_lowercase().replace("\"", "");
+        let upper_name = role_name.replace(" ", "-");
         let role = gid
             .create_role(&ctx.http(), |z| {
-                z.hoist(false).mentionable(true).name(&upper_name)
+                z.hoist(true).mentionable(true).name(&role_name)
             })
             .await?;
         let category = gid

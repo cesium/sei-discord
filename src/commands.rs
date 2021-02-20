@@ -19,14 +19,13 @@ struct Commands;
 #[min_args(1)]
 pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let spotlight_cat = args.single::<ChannelId>()?;
-    TIERS
-        .lock()
-        .await
+    let mut locked_tiers = TIERS.lock().await;
+    locked_tiers
         .0
         .entry(msg.guild_id.unwrap())
-        .or_insert(Guild::default())
+        .or_insert_with(Guild::default)
         .spotlight = Some(spotlight_cat);
-    TIERS.lock().await.save()?;
+    locked_tiers.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", spotlight_cat))
         .await?;
     Ok(())
@@ -36,14 +35,13 @@ pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> Comm
 #[min_args(1)]
 pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let news_channel = args.single::<ChannelId>()?;
-    TIERS
-        .lock()
-        .await
+    let mut locked_tiers = TIERS.lock().await;
+    locked_tiers
         .0
         .entry(msg.guild_id.unwrap())
-        .or_insert(Guild::default())
+        .or_insert_with(Guild::default)
         .news_channel = Some(news_channel);
-    TIERS.lock().await.save()?;
+    locked_tiers.save()?;
     msg.reply(&ctx, format!("Spotlight category set to {}", news_channel))
         .await?;
     Ok(())
@@ -52,7 +50,7 @@ pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 #[command]
 pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     for channel in msg.guild_id.unwrap().channels(&ctx).await?.values() {
-        channel.say(&ctx, args.rest()).await;
+        if channel.say(&ctx, args.rest()).await.is_err() {};
     }
     Ok(())
 }

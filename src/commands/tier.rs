@@ -59,7 +59,12 @@ pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 #[command]
 #[min_args(2)]
 pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let tier_name = args.single::<String>().unwrap().to_uppercase();
+    let tier_name = args
+        .single::<String>()
+        .unwrap()
+        .to_lowercase()
+        .replace("\"", "")
+        .replace(" ", "-");
     if let Some(tier) = TIERS
         .lock()
         .await
@@ -82,7 +87,12 @@ pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 #[command]
 #[min_args(2)]
 pub async fn rmuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let tier_name = args.single::<String>().unwrap().to_uppercase();
+    let tier_name = args
+        .single::<String>()
+        .unwrap()
+        .to_lowercase()
+        .replace("\"", "")
+        .replace(" ", "-");
     if let Some(tier) = TIERS
         .lock()
         .await
