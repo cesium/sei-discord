@@ -83,7 +83,7 @@ pub async fn addch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .map(|(_k, v)| v)
     {
         while !args.is_empty() {
-            company.addch(args.single::<ChannelId>()?);
+            company.0.addch(args.single::<ChannelId>()?);
         }
     };
     locked_tiers.save()?;
@@ -104,7 +104,7 @@ pub async fn rmch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         .map(|(_k, v)| v)
     {
         while !args.is_empty() {
-            company.rmch(args.single::<ChannelId>()?);
+            company.0.rmch(args.single::<ChannelId>()?);
         }
     };
     locked_tiers.save()?;
@@ -128,7 +128,7 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             .map(|(_k, v)| v)
         {
             if status {
-                if company.spotlight_start(&ctx.http, spot).await.is_ok() {
+                if company.0.spotlight_start(&ctx.http, spot).await.is_ok() {
                     msg.reply(&ctx, format!("Spotlight enabled for {}", company_name))
                         .await?;
                 } else {
@@ -138,7 +138,7 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                     )
                     .await?;
                 }
-            } else if company.spotlight_end(&ctx.http).await.is_ok() {
+            } else if company.0.spotlight_end(&ctx.http).await.is_ok() {
                 msg.reply(&ctx, format!("Spotlight disabled for {}", company_name))
                     .await?;
             } else {
@@ -173,7 +173,13 @@ pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         .map(|(_k, v)| v)
     {
         let uid = args.single::<UserId>()?;
-        company.give(&*ctx, uid).await?;
+        msg.guild_id
+            .unwrap()
+            .member(&ctx, uid)
+            .await?
+            .add_role(&ctx, company.1)
+            .await?;
+        company.0.give(&*ctx, uid).await?;
         msg.reply(&ctx, format!("User added to {}", company_name))
             .await?;
     } else {
@@ -197,7 +203,13 @@ pub async fn rmuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .map(|(_k, v)| v)
     {
         let uid = args.single::<UserId>()?;
-        company.rmuser(&*ctx, uid).await?;
+        msg.guild_id
+            .unwrap()
+            .member(&ctx, uid)
+            .await?
+            .remove_role(&ctx, company.1)
+            .await?;
+        company.0.rmuser(&*ctx, uid).await?;
         msg.reply(&ctx, format!("User removed from {}", company_name))
             .await?;
     } else {

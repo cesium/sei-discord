@@ -39,7 +39,7 @@ impl Default for Tiers {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Guild {
-    tiers: HashMap<String, Tier>,
+    pub tiers: HashMap<String, Tier>,
     pub spotlight: Option<ChannelId>,
     pub news_channel: Option<ChannelId>,
     pub spotlight_company: Option<String>,
@@ -83,14 +83,14 @@ impl Guild {
     }
 
     pub fn rm(&mut self, to_rm: &str) -> Option<Tier> {
-        let rm = self.tiers.remove(to_rm);
-        rm
+        self.tiers.remove(to_rm)
     }
 
-    pub fn flat_iter(&mut self) -> impl Iterator<Item = (&'_ String, &'_ mut Company)> {
-        self.tiers
-            .iter_mut()
-            .flat_map(|(_k, v)| v.companies.iter_mut())
+    pub fn flat_iter(&mut self) -> impl Iterator<Item = (&'_ String, (&'_ mut Company, RoleId))> {
+        self.tiers.iter_mut().flat_map(|(_k, v)| {
+            let role_id = v.role_id;
+            v.companies.iter_mut().map(move |(x, y)| (x, (y, role_id)))
+        })
     }
 }
 
