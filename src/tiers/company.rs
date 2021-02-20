@@ -13,7 +13,7 @@ pub struct Company {
     role_id: RoleId,
     cat_id: ChannelId,
     spotlight: bool,
-    default_voice: ChannelId,
+    pub default_voice: ChannelId,
     channels: Vec<ChannelId>,
     users: Vec<UserId>,
 }
