@@ -4,6 +4,7 @@ use crate::{
     requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest, UserType},
     tiers::TIERS,
 };
+use async_once::AsyncOnce;
 use lazy_static::lazy_static;
 use serenity::{
     async_trait,
@@ -16,33 +17,27 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{fs::File, io::BufReader};
 use uuid::Uuid;
 
 lazy_static! {
-    pub static ref JWT: String = {
-        let login_request: LoginRequest = File::open(&CONFIG.credentials_location)
-            .map(BufReader::new)
-            .and_then(|x| {
-                serde_json::from_reader(x)
-                    .map_err(|x| std::io::Error::new(std::io::ErrorKind::Other, x))
-            })
-            .unwrap();
-        match reqwest::blocking::Client::new()
+    pub static ref JWT: AsyncOnce<String> = AsyncOnce::new(async {
+        let login_request: LoginRequest = LoginRequest::from_env();
+        match reqwest::Client::new()
             .post(reqwest::Url::parse(format!("{}/sign_in", &CONFIG.backend_ip).as_str()).unwrap())
             .json(&login_request)
             .send()
+            .await
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    response.json::<LoginReply>().unwrap().jwt
+                    response.json::<LoginReply>().await.unwrap().jwt
                 } else {
-                    panic!("{}", response.json::<ErrorReply>().unwrap().error)
+                    panic!("{}", response.json::<ErrorReply>().await.unwrap().error)
                 }
             }
             _ => panic!("Couldn't login on backend"),
         }
-    };
+    });
 }
 
 impl UserType {
@@ -91,39 +86,38 @@ impl EventHandler for Handler {
                         discord_association_code: new_message.content.to_owned(),
                         discord_id: new_message.author.id.to_string(),
                     };
-                    if let Some(role) = Uuid::parse_str(&new_message.content)
-                        .ok()
-                        .and_then(|_| request_role(request))
-                    {
-                        let role_id = UserType::as_role(&role);
-                        let _ = member.add_role(&ctx, role_id).await;
-                        if role == UserType::Empresa {
-                            send_company_embed(&ctx, new_message.author, GUILD_ID).await;
-                            return;
+                    if let Some(_role) = Uuid::parse_str(&new_message.content).ok() {
+                        if let Some(role) = request_role(request).await {
+                            let role_id = UserType::as_role(&role);
+                            let _ = member.add_role(&ctx, role_id).await;
+                            if role == UserType::Empresa {
+                                send_company_embed(&ctx, new_message.author, GUILD_ID).await;
+                                return;
+                            }
+                            message = String::from(
+                                "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
+                            );
+                        } else if member
+                            .roles(&ctx)
+                            .await
+                            .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
+                            .is_some()
+                        {
+                            if company::try_give_company(
+                                &ctx,
+                                GUILD_ID,
+                                new_message.author.id,
+                                new_message.content.trim(),
+                            )
+                            .await
+                            {
+                                message = String::from(
+                                    "O seu id foi validado, terá agora acesso aos canais da SEI.",
+                                );
+                            } else {
+                                message = String::from("Emprsa não encontrada");
+                            }
                         }
-                        message = String::from(
-                            "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
-                        );
-                    }
-                } else if member
-                    .roles(&ctx)
-                    .await
-                    .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
-                    .is_some()
-                {
-                    if company::try_give_company(
-                        &ctx,
-                        GUILD_ID,
-                        new_message.author.id,
-                        new_message.content.trim(),
-                    )
-                    .await
-                    {
-                        message = String::from(
-                            "O seu id foi validado, terá agora acesso aos canais da SEI.",
-                        );
-                    } else {
-                        message = String::from("Emprsa não encontrada");
                     }
                 }
                 new_message
@@ -136,6 +130,8 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+        let jwt = JWT.get().await.as_str();
+        println!("{}", jwt);
         send_company_embed(
             &ctx,
             UserId(193043741676797952).to_user(&ctx).await.unwrap(),
@@ -145,15 +141,18 @@ impl EventHandler for Handler {
     }
 }
 
-fn request_role(association_request: AssociationRequest) -> Option<UserType> {
-    match reqwest::blocking::Client::new()
+async fn request_role(association_request: AssociationRequest) -> Option<UserType> {
+    let jwt = JWT.get().await.as_str();
+    match reqwest::Client::new()
         .post(reqwest::Url::parse(format!("{}/association", &CONFIG.backend_ip).as_str()).unwrap())
+        .bearer_auth(jwt)
         .json(&association_request)
         .send()
+        .await
     {
         Ok(response) => {
             if response.status().is_success() {
-                Some(response.json::<UserType>().unwrap())
+                Some(response.json::<UserType>().await.unwrap())
             } else {
                 None
             }

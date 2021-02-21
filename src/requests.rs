@@ -6,6 +6,15 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+impl LoginRequest {
+    pub fn from_env() -> Self {
+        Self {
+            email: std::env::var("EMAIL").expect("Expected a EMAIL in the environment"),
+            password: std::env::var("PASSWORD").expect("Expected a PASSWORD in the environment"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct LoginReply {
     pub jwt: String,
