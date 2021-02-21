@@ -163,7 +163,14 @@ async fn request_role(association_request: AssociationRequest) -> Option<UserTyp
 
 async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
     let mut company_names = std::collections::HashMap::new();
-    for (k, v) in TIERS.lock().await.0.get(&guild_id).unwrap().no_iter() {
+    for (k, v) in TIERS
+        .lock()
+        .await
+        .0
+        .entry(&guild_id)
+        .or_insert_with(Guild::default)
+        .no_iter()
+    {
         company_names.insert(
             k.to_owned(),
             v.company_names()
