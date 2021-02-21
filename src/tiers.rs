@@ -5,7 +5,10 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serenity::{
     http::CacheHttp,
-    model::id::{ChannelId, GuildId, RoleId, UserId},
+    model::{
+        guild::Member,
+        id::{ChannelId, GuildId, RoleId, UserId},
+    },
 };
 use std::collections::HashMap;
 use std::{
@@ -161,5 +164,19 @@ impl Tier {
 
     pub fn exists(&self, name: &str) -> bool {
         self.companies.contains_key(name)
+    }
+
+    pub async fn give_company(
+        &self,
+        company_name: &str,
+        ctx: &impl CacheHttp,
+        user: UserId,
+    ) -> serenity::Result<()> {
+        self.give(&ctx, user).await?;
+        if let Some(company) = self.companies.get(company_name) {
+            company.give(&ctx, user).await
+        } else {
+            Err(serenity::prelude::SerenityError::Other("Not found"))
+        }
     }
 }

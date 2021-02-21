@@ -1,6 +1,6 @@
 use crate::{
     config::CONFIG,
-    requests::{AssociationRequest, UserType, ErrorReply, LoginReply, LoginRequest},
+    requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest, UserType},
 };
 use lazy_static::lazy_static;
 use serenity::{
@@ -43,14 +43,14 @@ lazy_static! {
 }
 
 impl UserType {
-  fn as_role(&self) -> RoleId {
-    match self {
-        Self::Staff => RoleId(793534104339349534),
-        Self::Empresa => RoleId(793536901201264660),     // errado , mudar empresa
-        Self::Orador => RoleId(793537618138234912),
-        Self::Participante => RoleId(793536131458531389),
+    fn as_role(&self) -> RoleId {
+        match self {
+            Self::Staff => RoleId(793534104339349534),
+            Self::Empresa => RoleId(793536901201264660), // errado , mudar empresa
+            Self::Orador => RoleId(793537618138234912),
+            Self::Participante => RoleId(793536131458531389),
+        }
     }
-  }
 }
 const GUILD_ID: GuildId = GuildId(769885792038289445);
 pub struct Handler;
@@ -58,7 +58,7 @@ pub struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn guild_member_addition(&self, ctx: Context, _guild_id: GuildId, new_member: Member) {
-    new_member
+        new_member
             .user
             .dm(&ctx, |m| {
                 m.embed(|e| {
@@ -70,49 +70,53 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, new_message: Message) {
-        let mut message= String::from("Código inválido, tenta de novo");
+        let mut message = String::from("Código inválido, tenta de novo");
         if Message::is_private(&new_message) {
             let request = AssociationRequest {
                 discord_association_code: new_message.content.to_owned(),
                 discord_id: new_message.author.id.to_string(),
             };
-            if let Some(role) = Uuid::parse_str(&new_message.content).ok().and_then(|_| request_role(request)){
+            if let Some(role) = Uuid::parse_str(&new_message.content)
+                .ok()
+                .and_then(|_| request_role(request))
+            {
                 let role_id = UserType::as_role(&role);
                 let member = GUILD_ID.member(&ctx, new_message.author.id).await;
                 match member {
-                  Ok(mut m) => {
-                      let _ = m.add_role(&ctx, role_id).await;
-                      message = String::from("O teu id foi validado, vais agora ter acesso aos canais da SEI.");
-                  }
-                  Err(e) => println!("{}", e),
+                    Ok(mut m) => {
+                        let _ = m.add_role(&ctx, role_id).await;
+                        message = String::from(
+                            "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
+                        );
+                    }
+                    Err(e) => println!("{}", e),
                 }
             }
         }
-            new_message
-                .author
-                .dm(&ctx, |m| {
-                    m.content(message)
-                })
-                .await
-                .unwrap();
-        }
+        new_message
+            .author
+            .dm(&ctx, |m| m.content(message))
+            .await
+            .unwrap();
+    }
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
     }
 }
 
-fn request_role(association_request: AssociationRequest) -> Option <UserType>  {
-         match reqwest::blocking::Client::new()
-            .post(reqwest::Url::parse(format!("{}/association", &CONFIG.backend_ip).as_str()).unwrap())
-            .json(&association_request)
-            .send() {
-               Ok(response) => {
-                    if response.status().is_success() {
-                        Some(response.json::<UserType>().unwrap())
-                    } else {
-                        None
-                    }
-                }
-                _ =>  None
+fn request_role(association_request: AssociationRequest) -> Option<UserType> {
+    match reqwest::blocking::Client::new()
+        .post(reqwest::Url::parse(format!("{}/association", &CONFIG.backend_ip).as_str()).unwrap())
+        .json(&association_request)
+        .send()
+    {
+        Ok(response) => {
+            if response.status().is_success() {
+                Some(response.json::<UserType>().unwrap())
+            } else {
+                None
+            }
         }
+        _ => None,
+    }
 }
