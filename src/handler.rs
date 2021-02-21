@@ -73,8 +73,8 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, new_message: Message) {
-        let mut message = String::from("Código inválido, tenta de novo");
         if Message::is_private(&new_message) {
+            let mut message = String::from("Código inválido, tenta de novo");
             if let Ok(mut member) = GUILD_ID.member(&ctx, new_message.author.id).await {
                 if member
                     .roles(&ctx)
