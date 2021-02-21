@@ -10,7 +10,7 @@ use serenity::{
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Company {
     pub guild_id: GuildId,
-    role_id: RoleId,
+    pub role_id: RoleId,
     cat_id: ChannelId,
     spotlight: bool,
     pub default_voice: ChannelId,

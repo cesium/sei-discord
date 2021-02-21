@@ -92,8 +92,13 @@ impl Guild {
             v.companies.iter_mut().map(move |(x, y)| (x, (y, role_id)))
         })
     }
+
     pub fn iter(&mut self) -> impl Iterator<Item = (&'_ String, &'_ mut Tier)> {
         self.tiers.iter_mut()
+    }
+
+    pub fn no_iter(&self) -> impl Iterator<Item = (&'_ String, &'_ Tier)> {
+        self.tiers.iter()
     }
 }
 
@@ -105,6 +110,10 @@ pub struct Tier {
 }
 
 impl Tier {
+    pub fn company_names(&self) -> impl Iterator<Item = &'_ String> {
+        self.companies.keys()
+    }
+
     pub async fn create(name: &str, ctx: &impl CacheHttp, gid: GuildId) -> serenity::Result<Self> {
         let upper_name = name.to_lowercase().replace("\"", "").replace(" ", "-");
         let role = gid
@@ -161,5 +170,20 @@ impl Tier {
 
     pub fn exists(&self, name: &str) -> bool {
         self.companies.contains_key(name)
+    }
+
+    pub async fn give_company(
+        &self,
+        company_name: &str,
+        ctx: &impl CacheHttp,
+        user: UserId,
+    ) -> serenity::Result<Option<()>> {
+        self.give(&ctx, user).await?;
+        if let Some(company) = self.companies.get(company_name) {
+            company.give(&ctx, user).await?;
+            Ok(Some(()))
+        } else {
+            Ok(None)
+        }
     }
 }

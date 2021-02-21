@@ -17,7 +17,7 @@ pub struct AssociationRequest {
     pub discord_id: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq)]
 #[serde(tag = "association")]
 #[serde(rename_all = "camelCase")]
 pub enum UserType {
