@@ -1,6 +1,8 @@
+pub mod company;
 use crate::{
     config::CONFIG,
     requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest, UserType},
+    tiers::{TIERS},
 };
 use lazy_static::lazy_static;
 use serenity::{
@@ -9,7 +11,8 @@ use serenity::{
         channel::Message,
         gateway::Ready,
         guild::Member,
-        prelude::{GuildId, RoleId},
+        prelude::{GuildId, RoleId, UserId},
+        user::User,
     },
     prelude::*,
 };
@@ -46,7 +49,7 @@ impl UserType {
     fn as_role(&self) -> RoleId {
         match self {
             Self::Staff => RoleId(793534104339349534),
-            Self::Empresa => RoleId(793536901201264660), // errado , mudar empresa
+            Self::Empresa => RoleId(813053096158298122),
             Self::Orador => RoleId(793537618138234912),
             Self::Participante => RoleId(793536131458531389),
         }
@@ -72,35 +75,67 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, new_message: Message) {
         let mut message = String::from("Código inválido, tenta de novo");
         if Message::is_private(&new_message) {
-            let request = AssociationRequest {
-                discord_association_code: new_message.content.to_owned(),
-                discord_id: new_message.author.id.to_string(),
-            };
-            if let Some(role) = Uuid::parse_str(&new_message.content)
-                .ok()
-                .and_then(|_| request_role(request))
+            let mut member = GUILD_ID.member(&ctx, new_message.author.id).await.unwrap();
+            if member
+                .roles(&ctx)
+                .await
+                .filter(|x| {
+                    !x.iter().any(|z| {
+                        z.id == UserType::Empresa.as_role()
+                            || z.id == UserType::Participante.as_role()
+                    })
+                })
+                .is_some()
             {
-                let role_id = UserType::as_role(&role);
-                let member = GUILD_ID.member(&ctx, new_message.author.id).await;
-                match member {
-                    Ok(mut m) => {
-                        let _ = m.add_role(&ctx, role_id).await;
-                        message = String::from(
-                            "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
-                        );
+                let request = AssociationRequest {
+                    discord_association_code: new_message.content.to_owned(),
+                    discord_id: new_message.author.id.to_string(),
+                };
+                if let Some(role) = Uuid::parse_str(&new_message.content)
+                    .ok()
+                    .and_then(|_| request_role(request))
+                {
+                    let role_id = UserType::as_role(&role);
+                    let _ = member.add_role(&ctx, role_id).await;
+                    if role == UserType::Empresa {
+                        send_company_embed(&ctx, new_message.author, GUILD_ID).await;
+                        return;
                     }
-                    Err(e) => println!("{}", e),
+                    message = String::from(
+                        "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
+                    );
+                }
+            } else if member
+                .roles(&ctx)
+                .await
+                .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
+                .is_some()
+            {
+                if company::try_give_company(&ctx, GUILD_ID, new_message.author.id, new_message.content.trim()).await {
+                    message = String::from(
+                        "O seu id foi validado, terá agora acesso aos canais da SEI.",
+                    );
+                } else {
+                    message = String::from(
+                        "Emprsa não encontrada",
+                    );
                 }
             }
+            new_message
+                .author
+                .dm(&ctx, |m| m.content(message))
+                .await
+                .unwrap();
         }
-        new_message
-            .author
-            .dm(&ctx, |m| m.content(message))
-            .await
-            .unwrap();
     }
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
+        send_company_embed(
+            &ctx,
+            UserId(193043741676797952).to_user(&ctx).await.unwrap(),
+            GuildId(481544751158394880),
+        )
+        .await;
     }
 }
 
@@ -119,4 +154,25 @@ fn request_role(association_request: AssociationRequest) -> Option<UserType> {
         }
         _ => None,
     }
+}
+
+async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
+    let mut company_names = std::collections::HashMap::new();
+    for (k, v) in TIERS.lock().await.0.get(&guild_id).unwrap().no_iter() {
+        company_names.insert(
+            k.to_owned(),
+            v.company_names()
+                .map(|x| x.to_owned())
+                .collect::<Vec<String>>()
+                .join("\n"),
+        );
+    }
+    user.dm(&ctx, |m| { m.embed(|e| {
+        e.title("Escolha a sua empresa")
+            .description("Para concluir o processo de registo, responda a esta mensagem com a empresa a que pertence, da lista abaixo")
+            .fields(company_names.iter().map(|(k, v)| (k,v,true))) 
+        })
+    })
+    .await
+        .unwrap();
 }
