@@ -2,7 +2,7 @@ pub mod company;
 use crate::{
     config::CONFIG,
     requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest, UserType},
-    tiers::TIERS,
+    tiers::{Guild, TIERS},
 };
 use async_once::AsyncOnce;
 use lazy_static::lazy_static;
@@ -167,7 +167,7 @@ async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
         .lock()
         .await
         .0
-        .entry(&guild_id)
+        .entry(guild_id)
         .or_insert_with(Guild::default)
         .no_iter()
     {
