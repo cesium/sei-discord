@@ -11,7 +11,7 @@ use serenity::{
     prelude::*,
 };
 #[group]
-#[commands(spotlight_set, news_set, broadcast)]
+#[commands(spotlight_set, news_set, broadcast, say)]
 #[required_permissions(ADMINISTRATOR)]
 struct Commands;
 
@@ -52,5 +52,13 @@ pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResul
     for channel in msg.guild_id.unwrap().channels(&ctx).await?.values() {
         if channel.say(&ctx, args.rest()).await.is_err() {};
     }
+    Ok(())
+}
+
+#[command]
+#[min_args(2)]
+pub async fn say(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
+    let channel_id = args.single::<ChannelId>()?;
+    channel_id.say(&ctx.http, args.rest()).await?;
     Ok(())
 }
