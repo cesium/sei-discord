@@ -113,6 +113,11 @@ pub async fn company_vc(
     None
 }
 
+#[options("/<idk..>")]
+pub async fn cors(idk: std::path::PathBuf) -> Option<()> {
+    Some(())
+}
+
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
 use rocket::{Request, Response};
