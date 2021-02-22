@@ -63,7 +63,7 @@ pub struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn guild_member_addition(&self, ctx: Context, _guild_id: GuildId, new_member: Member) {
-        new_member
+        let dm = new_member
             .user
             .dm(&ctx, |m| {
                 m.embed(|e| {
@@ -71,7 +71,11 @@ impl EventHandler for Handler {
                     .description("Para poderes ter acesso a todo o evento, segue o link x e cola aqui o codigo que la encontras para finalizar a tua inscricao")
                 })
             })
-            .await.unwrap();
+            .await;
+        match dm {
+            Ok(msg) => println!("{} joined", msg.channel_id),
+            Err(why) => println!("{}", why),
+        }
     }
 
     async fn message(&self, ctx: Context, new_message: Message) {
