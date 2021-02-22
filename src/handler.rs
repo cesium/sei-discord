@@ -12,7 +12,7 @@ use serenity::{
         channel::Message,
         gateway::Ready,
         guild::Member,
-        prelude::{GuildId, RoleId, UserId},
+        prelude::{GuildId, RoleId},
         user::User,
     },
     prelude::*,
@@ -86,7 +86,7 @@ impl EventHandler for Handler {
                         discord_association_code: new_message.content.to_owned(),
                         discord_id: new_message.author.id.to_string(),
                     };
-                    if let Some(_role) = Uuid::parse_str(&new_message.content).ok() {
+                    if Uuid::parse_str(&new_message.content).ok().is_some() {
                         if let Some(role) = request_role(request).await {
                             let role_id = UserType::as_role(&role);
                             let _ = member.add_role(&ctx, role_id).await;
@@ -97,26 +97,26 @@ impl EventHandler for Handler {
                             message = String::from(
                                 "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
                             );
-                        } else if member
-                            .roles(&ctx)
-                            .await
-                            .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
-                            .is_some()
+                        }
+                    } else if member
+                        .roles(&ctx)
+                        .await
+                        .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
+                        .is_some()
+                    {
+                        if company::try_give_company(
+                            &ctx,
+                            GUILD_ID,
+                            new_message.author.id,
+                            new_message.content.trim(),
+                        )
+                        .await
                         {
-                            if company::try_give_company(
-                                &ctx,
-                                GUILD_ID,
-                                new_message.author.id,
-                                new_message.content.trim(),
-                            )
-                            .await
-                            {
-                                message = String::from(
-                                    "O seu id foi validado, terá agora acesso aos canais da SEI.",
-                                );
-                            } else {
-                                message = String::from("Emprsa não encontrada");
-                            }
+                            message = String::from(
+                                "O seu id foi validado, terá agora acesso aos canais da SEI.",
+                            );
+                        } else {
+                            message = String::from("Emprsa não encontrada");
                         }
                     }
                 }
@@ -128,7 +128,7 @@ impl EventHandler for Handler {
             }
         }
     }
-    async fn ready(&self, ctx: Context, ready: Ready) {
+    async fn ready(&self, _ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
         let jwt = JWT.get().await.as_str();
         println!("{}", jwt);
