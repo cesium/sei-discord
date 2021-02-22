@@ -132,12 +132,6 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
         let jwt = JWT.get().await.as_str();
         println!("{}", jwt);
-        send_company_embed(
-            &ctx,
-            UserId(193043741676797952).to_user(&ctx).await.unwrap(),
-            GuildId(481544751158394880),
-        )
-        .await;
     }
 }
 
