@@ -98,26 +98,26 @@ impl EventHandler for Handler {
                                 "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
                             );
                         }
-                    } else if member
-                        .roles(&ctx)
-                        .await
-                        .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
-                        .is_some()
+                    }
+                } else if member
+                    .roles(&ctx)
+                    .await
+                    .filter(|x| x.iter().any(|z| z.id == UserType::Empresa.as_role()))
+                    .is_some()
+                {
+                    if company::try_give_company(
+                        &ctx,
+                        GUILD_ID,
+                        new_message.author.id,
+                        new_message.content.trim(),
+                    )
+                    .await
                     {
-                        if company::try_give_company(
-                            &ctx,
-                            GUILD_ID,
-                            new_message.author.id,
-                            new_message.content.trim(),
-                        )
-                        .await
-                        {
-                            message = String::from(
-                                "O seu id foi validado, terá agora acesso aos canais da SEI.",
-                            );
-                        } else {
-                            message = String::from("Emprsa não encontrada");
-                        }
+                        message = String::from(
+                            "O seu id foi validado, terá agora acesso aos canais da SEI.",
+                        );
+                    } else {
+                        message = String::from("Emprsa não encontrada");
                     }
                 }
                 new_message
