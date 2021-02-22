@@ -178,8 +178,8 @@ impl Tier {
         ctx: &impl CacheHttp,
         user: UserId,
     ) -> serenity::Result<Option<()>> {
-        self.give(&ctx, user).await?;
         if let Some(company) = self.companies.get(company_name) {
+            self.give(&ctx, user).await?;
             company.give(&ctx, user).await?;
             Ok(Some(()))
         } else {
