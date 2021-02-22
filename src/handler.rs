@@ -50,7 +50,7 @@ impl UserType {
         }
     }
 }
-const GUILD_ID: GuildId = GuildId(769885792038289445);
+const GUILD_ID: GuildId = GuildId(793533219865755648);
 pub struct Handler;
 
 #[async_trait]
