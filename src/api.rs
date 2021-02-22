@@ -147,7 +147,10 @@ impl Fairing for CORS {
 pub fn main(arc: Arc<CacheAndHttp>) {
     tokio::spawn(async {
         if let Err(why) = rocket::ignite()
-            .mount("/", routes![spotlight_start, spotlight_end, company_vc])
+            .mount(
+                "/",
+                routes![spotlight_start, spotlight_end, company_vc, cors],
+            )
             .attach(CORS())
             .manage(arc)
             .launch()
