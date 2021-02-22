@@ -4,7 +4,7 @@ use rocket::State;
 use rocket_contrib::json::Json;
 use serenity::CacheAndHttp;
 use std::sync::Arc;
-use types::{ApiKey, CompanyVCResponse, SpotlightReq};
+use types::{ApiKey, CompanyVCResponse, SpotlightReq, UserVcResponse};
 
 #[post("/spotlight", format = "json", data = "<company_name>")]
 pub async fn spotlight_start(
@@ -83,22 +83,30 @@ pub async fn company_vc(
             .find(|(k, _v)| **k == company_name)
             .map(|(_k, v)| v);
         if let Some(company) = company {
-            return Some(Json(CompanyVCResponse {
-                users: company
-                    .0
-                    .default_voice
-                    .to_channel(&**discord)
-                    .await
-                    .unwrap()
-                    .guild()
-                    .unwrap()
-                    .members(&*discord.cache)
-                    .await
-                    .unwrap()
-                    .iter()
-                    .map(|x| x.user.id)
-                    .collect(),
-            }));
+            let mut vec = Vec::new();
+            for member in company
+                .0
+                .default_voice
+                .to_channel(&**discord)
+                .await
+                .unwrap()
+                .guild()
+                .unwrap()
+                .members(&*discord.cache)
+                .await
+                .unwrap()
+                .iter()
+            {
+                vec.push(UserVcResponse {
+                    discord_id: member.user.id,
+                    image: member
+                        .user
+                        .avatar_url()
+                        .unwrap_or_else(|| member.user.default_avatar_url()),
+                    name: member.display_name().into_owned(),
+                });
+            }
+            return Some(Json(CompanyVCResponse { users: vec }));
         } else {
         }
     }
