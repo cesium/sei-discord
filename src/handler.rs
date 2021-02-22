@@ -20,7 +20,7 @@ use serenity::{
 use uuid::Uuid;
 
 lazy_static! {
-    pub static ref JWT: AsyncOnce<String> = AsyncOnce::new(async {
+    pub static ref JWT: AsyncOnce<Option<String>> = AsyncOnce::new(async {
         let login_request: LoginRequest = LoginRequest::from_env();
         match reqwest::Client::new()
             .post(
@@ -33,12 +33,16 @@ lazy_static! {
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    response.json::<LoginReply>().await.unwrap().jwt
+                    response.json::<LoginReply>().await.ok().map(|x| x.jwt)
                 } else {
-                    panic!("{}", response.json::<ErrorReply>().await.unwrap().error)
+                    println!("{}", response.json::<ErrorReply>().await.unwrap().error);
+                    None
                 }
             }
-            _ => panic!("Couldn't login on backend"),
+            _ => {
+                println!("Couldn't login on backend");
+                None
+            }
         }
     });
 }
@@ -133,31 +137,33 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, _ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
-        let jwt = JWT.get().await.as_str();
-        println!("{}", jwt);
+        println!("{:?}", JWT.get().await);
     }
 }
 
 async fn request_role(association_request: AssociationRequest) -> Option<UserType> {
-    let jwt = JWT.get().await.as_str();
-    match reqwest::Client::new()
-        .post(
-            reqwest::Url::parse(format!("{}/api/v1/association", &CONFIG.backend_ip).as_str())
-                .unwrap(),
-        )
-        .bearer_auth(jwt)
-        .json(&association_request)
-        .send()
-        .await
-    {
-        Ok(response) => {
-            if response.status().is_success() {
-                Some(response.json::<UserType>().await.unwrap())
-            } else {
-                None
+    if let Some(jwt) = JWT.get().await {
+        match reqwest::Client::new()
+            .post(
+                reqwest::Url::parse(format!("{}/api/v1/association", &CONFIG.backend_ip).as_str())
+                    .unwrap(),
+            )
+            .bearer_auth(jwt)
+            .json(&association_request)
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    Some(response.json::<UserType>().await.unwrap())
+                } else {
+                    None
+                }
             }
+            _ => None,
         }
-        _ => None,
+    } else {
+        None
     }
 }
 
