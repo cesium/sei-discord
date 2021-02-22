@@ -23,7 +23,10 @@ lazy_static! {
     pub static ref JWT: AsyncOnce<String> = AsyncOnce::new(async {
         let login_request: LoginRequest = LoginRequest::from_env();
         match reqwest::Client::new()
-            .post(reqwest::Url::parse(format!("{}/sign_in", &CONFIG.backend_ip).as_str()).unwrap())
+            .post(
+                reqwest::Url::parse(format!("{}/api/auth/sign_in", &CONFIG.backend_ip).as_str())
+                    .unwrap(),
+            )
             .json(&login_request)
             .send()
             .await
@@ -138,7 +141,10 @@ impl EventHandler for Handler {
 async fn request_role(association_request: AssociationRequest) -> Option<UserType> {
     let jwt = JWT.get().await.as_str();
     match reqwest::Client::new()
-        .post(reqwest::Url::parse(format!("{}/association", &CONFIG.backend_ip).as_str()).unwrap())
+        .post(
+            reqwest::Url::parse(format!("{}/api/v1/association", &CONFIG.backend_ip).as_str())
+                .unwrap(),
+        )
         .bearer_auth(jwt)
         .json(&association_request)
         .send()
