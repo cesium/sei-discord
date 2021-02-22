@@ -68,7 +68,8 @@ impl EventHandler for Handler {
             .dm(&ctx, |m| {
                 m.embed(|e| {
                     e.title("Bem-vindo(a) a SEI'21!")
-                    .description("Para poderes ter acesso a todo o evento, segue o link x e cola aqui o codigo que la encontras para finalizar a tua inscricao")
+                    .description("Para poderes ter acesso a todo o evento, cola aqui o código de associação ao discord que recebeste no teu email")
+                    .thumbnail("https://cdn.discordapp.com/attachments/425980901344935937/813437097561554944/icon-final.png")
                 })
             })
             .await;
@@ -172,7 +173,7 @@ async fn request_role(association_request: AssociationRequest) -> Option<UserTyp
 }
 
 async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
-    let mut company_names = std::collections::HashMap::new();
+    let mut company_names = std::collections::BTreeMap::new();
     for (k, v) in TIERS
         .lock()
         .await
@@ -192,6 +193,7 @@ async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
     user.dm(&ctx, |m| { m.embed(|e| {
         e.title("Escolha a sua empresa")
             .description("Para concluir o processo de registo, responda a esta mensagem com a empresa a que pertence, da lista abaixo")
+            .thumbnail("https://cdn.discordapp.com/attachments/425980901344935937/813437097561554944/icon-final.png")
             .fields(company_names.iter().map(|(k, v)| (k,v,true)))
         })
     })
