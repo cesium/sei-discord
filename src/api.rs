@@ -28,6 +28,17 @@ pub async fn spotlight_start(
             if let Some(spot) = spot {
                 if company.0.spotlight_start(&**discord, spot).await.is_ok() {
                     guild.spotlight_company = Some(company_name.to_owned());
+                    if let Some(nc) = guild.news_channel {
+                        let _ = nc
+                            .say(
+                                &*discord.http,
+                                format!(
+                                    "A empresa **{}** acabou de ativar o spotlight",
+                                    company_name
+                                ),
+                            )
+                            .await;
+                    }
                 } else {
                 }
                 return Some(());
@@ -53,6 +64,14 @@ pub async fn spotlight_end(_wakey: ApiKey, discord: State<'_, Arc<CacheAndHttp>>
             if let Some(company) = company {
                 if company.0.spotlight_end(&**discord).await.is_ok() {
                     guild.spotlight_company = None;
+                    if let Some(nc) = guild.news_channel {
+                        let _ = nc
+                            .say(
+                                &*discord.http,
+                                format!("O spotlight da empresa **{}** acabou", company_name),
+                            )
+                            .await;
+                    }
                 } else {
                 }
                 return Some(());

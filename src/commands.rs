@@ -42,7 +42,7 @@ pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         .or_insert_with(Guild::default)
         .news_channel = Some(news_channel);
     locked_tiers.save()?;
-    msg.reply(&ctx, format!("Spotlight category set to {}", news_channel))
+    msg.reply(&ctx, format!("News channel set to {}", news_channel))
         .await?;
     Ok(())
 }

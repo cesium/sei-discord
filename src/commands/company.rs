@@ -73,7 +73,7 @@ pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 #[command]
 #[min_args(2)]
-pub async fn addch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+pub async fn addch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let company = args
         .single::<String>()
         .unwrap()
@@ -81,6 +81,7 @@ pub async fn addch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .replace("\"", "")
         .replace(" ", "-");
     let mut locked_tiers = TIERS.lock().await;
+    let mut vec = Vec::new();
     if let Some(company) = locked_tiers
         .0
         .entry(msg.guild_id.unwrap())
@@ -90,22 +91,27 @@ pub async fn addch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .map(|(_k, v)| v)
     {
         while !args.is_empty() {
-            company.0.addch(args.single::<ChannelId>()?);
+            let ch_name = args.single::<ChannelId>()?;
+            company.0.addch(ch_name);
+            vec.push(ch_name.to_string());
         }
     };
+    msg.reply(&ctx, format!("Paired channels: {}", vec.join(" ")))
+        .await?;
     locked_tiers.save()?;
     Ok(())
 }
 
 #[command]
 #[min_args(2)]
-pub async fn rmch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+pub async fn rmch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let company = args
         .single::<String>()
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
         .replace(" ", "-");
+    let mut vec = Vec::new();
     let mut locked_tiers = TIERS.lock().await;
     if let Some(company) = locked_tiers
         .0
@@ -116,9 +122,13 @@ pub async fn rmch(_ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         .map(|(_k, v)| v)
     {
         while !args.is_empty() {
-            company.0.rmch(args.single::<ChannelId>()?);
+            let ch_name = args.single::<ChannelId>()?;
+            company.0.rmch(ch_name);
+            vec.push(ch_name.to_string());
         }
     };
+    msg.reply(&ctx, format!("Paired channels: {}", vec.join(" ")))
+        .await?;
     locked_tiers.save()?;
     Ok(())
 }
@@ -138,6 +148,7 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         .0
         .entry(msg.guild_id.unwrap())
         .or_insert_with(Guild::default);
+    let news = locked_tier.news_channel;
     if let Some(spot) = locked_tier.spotlight {
         if let Some(company) = locked_tier
             .flat_iter()
@@ -148,6 +159,17 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                 if company.0.spotlight_start(&ctx.http, spot).await.is_ok() {
                     msg.reply(&ctx, format!("Spotlight enabled for {}", company_name))
                         .await?;
+                    if let Some(nc) = news {
+                        let _ = nc
+                            .say(
+                                &ctx,
+                                format!(
+                                    "A empresa **{}** acabou de ativar o spotlight",
+                                    company_name
+                                ),
+                            )
+                            .await;
+                    }
                 } else {
                     msg.reply(
                         &ctx,
@@ -158,6 +180,14 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             } else if company.0.spotlight_end(&ctx.http).await.is_ok() {
                 msg.reply(&ctx, format!("Spotlight disabled for {}", company_name))
                     .await?;
+                if let Some(nc) = news {
+                    let _ = nc
+                        .say(
+                            &ctx,
+                            format!("O spotlight da empresa **{}** acabou", company_name),
+                        )
+                        .await;
+                }
             } else {
                 msg.reply(
                     &ctx,
