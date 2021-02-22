@@ -9,7 +9,7 @@ pub mod tiers;
 extern crate rocket;
 use crate::commands::{company::COMPANY_GROUP, tier::TIER_GROUP, COMMANDS_GROUP};
 use handler::Handler;
-use serenity::{framework::StandardFramework, prelude::*};
+use serenity::{client::bridge::gateway::GatewayIntents, framework::StandardFramework, prelude::*};
 use std::{env, sync::Arc};
 
 #[tokio::main]
@@ -17,6 +17,7 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let mut client = Client::builder(&token)
         .event_handler(Handler)
+        .intents(GatewayIntents::all())
         .framework(
             StandardFramework::new()
                 .configure(|c| c.prefix("$"))
