@@ -4,7 +4,6 @@ use rocket::{
     request::{self, FromRequest, Outcome, Request},
 };
 use serde::{Deserialize, Serialize};
-use serenity::model::id::UserId;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SpotlightReq {
@@ -18,7 +17,7 @@ pub struct CompanyVCResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserVcResponse {
-    pub discord_id: UserId,
+    pub discord_id: String,
     pub image: String,
     pub name: String,
 }

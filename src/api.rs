@@ -98,7 +98,7 @@ pub async fn company_vc(
                 .iter()
             {
                 vec.push(UserVcResponse {
-                    discord_id: member.user.id,
+                    discord_id: member.user.id.to_string(),
                     image: member
                         .user
                         .avatar_url()
@@ -115,6 +115,7 @@ pub async fn company_vc(
 
 #[options("/<idk..>")]
 pub async fn cors(idk: std::path::PathBuf) -> Option<()> {
+    let _ = idk;
     Some(())
 }
 
