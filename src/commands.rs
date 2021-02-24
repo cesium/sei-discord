@@ -1,17 +1,21 @@
 pub mod company;
 pub mod tier;
 
+use crate::rocket::futures::StreamExt;
 use crate::tiers::{Guild, TIERS};
 use serenity::{
     framework::standard::{
         macros::{command, group},
         Args, CommandResult,
     },
-    model::{channel::Message, id::ChannelId},
+    model::{
+        channel::Message,
+        id::{ChannelId, UserId},
+    },
     prelude::*,
 };
 #[group]
-#[commands(spotlight_set, news_set, broadcast, say)]
+#[commands(spotlight_set, news_set, broadcast, say, give_badge, give_badge_all)]
 #[required_permissions(ADMINISTRATOR)]
 struct Commands;
 
@@ -60,5 +64,34 @@ pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResul
 pub async fn say(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
     let channel_id = args.single::<ChannelId>()?;
     channel_id.say(&ctx.http, args.rest()).await?;
+    Ok(())
+}
+
+#[command]
+#[min_args(2)]
+pub async fn give_badge(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let user_id = args.single::<UserId>()?;
+    let badge = args.single::<u32>()?;
+    if crate::handler::give_badge(user_id, badge).await.is_some() {
+        msg.reply(&ctx.http, "Badge given with success").await?;
+    } else {
+        msg.reply(&ctx.http, "Badge attribution failed").await?;
+    }
+    Ok(())
+}
+
+#[command]
+#[min_args(1)]
+pub async fn give_badge_all(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let badge = args.single::<u32>()?;
+    let mut iter = msg.guild_id.unwrap().members_iter(&ctx.http).boxed();
+    while let Some(user) = iter.next().await {
+        if let Ok(user) = user {
+            crate::handler::give_badge(user.user.id, badge).await;
+        }
+    }
+
+    msg.reply(&ctx.http, "Badges given with some success")
+        .await?;
     Ok(())
 }

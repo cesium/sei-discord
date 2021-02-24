@@ -40,3 +40,19 @@ pub enum UserType {
 pub struct ErrorReply {
     pub error: String,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SafiraIdResponse {
+    pub id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BadgeGiveRequest {
+    pub redeem: SmolBoyRequest,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SmolBoyRequest {
+    pub attendee_id: String,
+    pub badge_id: u32,
+}

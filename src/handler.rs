@@ -1,7 +1,7 @@
 pub mod company;
 use crate::{
     config::CONFIG,
-    requests::{AssociationRequest, ErrorReply, LoginReply, LoginRequest, UserType},
+    requests::*,
     tiers::{Guild, TIERS},
 };
 use async_once::AsyncOnce;
@@ -12,7 +12,7 @@ use serenity::{
         channel::Message,
         gateway::Ready,
         guild::Member,
-        prelude::{GuildId, RoleId},
+        prelude::{GuildId, RoleId, UserId},
         user::User,
     },
     prelude::*,
@@ -48,7 +48,7 @@ lazy_static! {
 }
 
 impl UserType {
-    fn as_role(&self) -> RoleId {
+    const fn as_role(&self) -> RoleId {
         match self {
             Self::Staff => RoleId(793534104339349534),
             Self::Empresa => RoleId(813053096158298122),
@@ -105,6 +105,10 @@ impl EventHandler for Handler {
                             if role == UserType::Empresa {
                                 send_company_embed(&ctx, new_message.author, GUILD_ID).await;
                                 return;
+                            } else if role == UserType::Participante {
+                                if let Some(bg) = CONFIG.acred_badge {
+                                    give_badge(new_message.author.id, bg).await;
+                                }
                             }
                             message = String::from(
                                 "O teu id foi validado, vais agora ter acesso aos canais da SEI.",
@@ -199,4 +203,58 @@ async fn send_company_embed(ctx: &Context, user: User, guild_id: GuildId) {
     })
     .await
         .unwrap();
+}
+
+pub async fn give_badge(uid: UserId, badge_id: u32) -> Option<()> {
+    if let Some(jwt) = JWT.get().await {
+        match reqwest::Client::new()
+            .get(
+                reqwest::Url::parse(
+                    format!("{}/api/v1/association/{}", &CONFIG.backend_ip, uid).as_str(),
+                )
+                .unwrap(),
+            )
+            .bearer_auth(jwt)
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    let attendee_id = response.json::<SafiraIdResponse>().await.unwrap().id;
+                    let badge_req = BadgeGiveRequest {
+                        redeem: SmolBoyRequest {
+                            attendee_id,
+                            badge_id,
+                        },
+                    };
+                    match reqwest::Client::new()
+                        .post(
+                            reqwest::Url::parse(
+                                format!("{}/api/v1/redeems", &CONFIG.backend_ip).as_str(),
+                            )
+                            .unwrap(),
+                        )
+                        .bearer_auth(jwt)
+                        .json(&badge_req)
+                        .send()
+                        .await
+                    {
+                        Ok(response) => {
+                            if response.status().is_success() {
+                                Some(())
+                            } else {
+                                None
+                            }
+                        }
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    } else {
+        None
+    }
 }

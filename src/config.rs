@@ -12,6 +12,7 @@ pub struct Config {
     pub backend_ip: String,
     pub wakey: Option<String>,
     pub roles_location: PathBuf,
+    pub acred_badge: Option<u32>,
 }
 
 impl Config {
@@ -23,6 +24,9 @@ impl Config {
             )
             .unwrap(),
             backend_ip: std::env::var("BACKEND_IP").expect("Expected IP on env"),
+            acred_badge: std::env::var("ACRED_BADGE")
+                .ok()
+                .and_then(|x| x.parse().ok()),
         }
     }
 }
