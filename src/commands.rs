@@ -16,11 +16,11 @@ use serenity::{
 };
 #[group]
 #[commands(spotlight_set, news_set, broadcast, say, give_badge, give_badge_all)]
-#[required_permissions(ADMINISTRATOR)]
 struct Commands;
 
 #[command]
 #[min_args(1)]
+#[required_permissions(ADMINISTRATOR)]
 pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let spotlight_cat = args.single::<ChannelId>()?;
     let mut locked_tiers = TIERS.lock().await;
@@ -37,6 +37,7 @@ pub async fn spotlight_set(ctx: &Context, msg: &Message, mut args: Args) -> Comm
 
 #[command]
 #[min_args(1)]
+#[required_permissions(ADMINISTRATOR)]
 pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let news_channel = args.single::<ChannelId>()?;
     let mut locked_tiers = TIERS.lock().await;
@@ -52,6 +53,7 @@ pub async fn news_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 }
 
 #[command]
+#[required_permissions(ADMINISTRATOR)]
 pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     for channel in msg.guild_id.unwrap().channels(&ctx).await?.values() {
         if channel.say(&ctx, args.rest()).await.is_err() {};
@@ -61,6 +63,7 @@ pub async fn broadcast(ctx: &Context, msg: &Message, args: Args) -> CommandResul
 
 #[command]
 #[min_args(2)]
+#[required_permissions(MANAGE_ROLES)]
 pub async fn say(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
     let channel_id = args.single::<ChannelId>()?;
     channel_id.say(&ctx.http, args.rest()).await?;
@@ -69,6 +72,7 @@ pub async fn say(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult
 
 #[command]
 #[min_args(2)]
+#[required_permissions(MANAGE_ROLES)]
 pub async fn give_badge(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let user_id = args.single::<UserId>()?;
     let badge = args.single::<u32>()?;
@@ -82,6 +86,7 @@ pub async fn give_badge(ctx: &Context, msg: &Message, mut args: Args) -> Command
 
 #[command]
 #[min_args(1)]
+#[required_permissions(ADMINISTRATOR)]
 pub async fn give_badge_all(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let badge = args.single::<u32>()?;
     let mut iter = msg.guild_id.unwrap().members_iter(&ctx.http).boxed();
