@@ -18,7 +18,8 @@ pub async fn spotlight_start(
         let company_name = company_name
             .to_lowercase()
             .replace("\"", "")
-            .replace(" ", "-");
+            .replace(" ", "-")
+            .replace("/", "-");
         let spot = guild.spotlight;
         let company = guild
             .flat_iter()
@@ -96,7 +97,8 @@ pub async fn company_vc(
         let company_name = company_name
             .to_lowercase()
             .replace("\"", "")
-            .replace(" ", "-");
+            .replace(" ", "-")
+            .replace("/", "-");
         let company = guild
             .flat_iter()
             .find(|(k, _v)| **k == company_name)

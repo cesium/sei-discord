@@ -31,7 +31,11 @@ pub async fn create(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .tier(tier_str)
     {
         for arg in args {
-            let arg = arg.to_lowercase().replace("\"", "").replace(" ", "-");
+            let arg = arg
+                .to_lowercase()
+                .replace("\"", "")
+                .replace(" ", "-")
+                .replace("/", "-");
             if let Ok(company) = Corp::create(&arg, &ctx, msg.guild_id.unwrap()).await {
                 tier.put(arg.to_owned(), company);
                 vec.push(arg);
@@ -51,7 +55,11 @@ pub async fn rm(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut vec = Vec::new();
     let mut locked_tiers = TIERS.lock().await;
     for arg in args {
-        let arg = arg.to_lowercase().replace("\"", "").replace(" ", "-");
+        let arg = arg
+            .to_lowercase()
+            .replace("\"", "")
+            .replace(" ", "-")
+            .replace("/", "-");
         if let Some(tier) = locked_tiers
             .0
             .entry(msg.guild_id.unwrap())
@@ -79,7 +87,8 @@ pub async fn addch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
-        .replace(" ", "-");
+        .replace(" ", "-")
+        .replace("/", "-");
     let mut locked_tiers = TIERS.lock().await;
     let mut vec = Vec::new();
     if let Some(company) = locked_tiers
@@ -110,7 +119,8 @@ pub async fn rmch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
-        .replace(" ", "-");
+        .replace(" ", "-")
+        .replace("/", "-");
     let mut vec = Vec::new();
     let mut locked_tiers = TIERS.lock().await;
     if let Some(company) = locked_tiers
@@ -141,7 +151,8 @@ pub async fn spotlight(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
-        .replace(" ", "-");
+        .replace(" ", "-")
+        .replace("/", "-");
     let status = args.single::<bool>().unwrap();
     let mut locked_tiers = TIERS.lock().await;
     let locked_tier = locked_tiers
@@ -214,7 +225,8 @@ pub async fn adduser(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
-        .replace(" ", "-");
+        .replace(" ", "-")
+        .replace("/", "-");
     let mut locked_tiers = TIERS.lock().await;
     if let Some(company) = locked_tiers
         .0
@@ -249,6 +261,7 @@ pub async fn rmuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .unwrap()
         .to_lowercase()
         .replace("\"", "")
+        .replace("/", "-")
         .replace(" ", "-");
     let mut locked_tiers = TIERS.lock().await;
     if let Some(company) = locked_tiers
